@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 diesel = "2.2"
 diesel-async = { version = "0.5", features = ["postgres"] }
+chrono = "0.4"
