@@ -29,12 +29,13 @@ impl RustaceanRepository {
             .await
     }
 
-    pub async fn update(c: &mut AsyncPgConnection, rustacean: Rustacean) -> QueryResult<Rustacean> {
-        diesel::update(rustaceans::table.find(rustacean.id))
-            .set((
-                rustaceans::name.eq(rustacean.name.clone()),
-                rustaceans::email.eq(rustacean.email.clone()),
-            ))
+    pub async fn update(
+        c: &mut AsyncPgConnection,
+        id: i32,
+        patch: UpdateRustacean,
+    ) -> QueryResult<Rustacean> {
+        diesel::update(rustaceans::table.find(id))
+            .set(&patch)
             .get_result(c)
             .await
     }
