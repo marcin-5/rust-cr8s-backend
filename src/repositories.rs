@@ -1,80 +1,69 @@
+use crate::models::*;
 #[allow(unused_imports)]
 use crate::schema::*;
 use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 
-use crate::models::*;
+/// A macro to generate a full repository implementation for a given data model.
+/// This abstracts away the boilerplate CRUD logic.
+macro_rules! implement_repository {
+    (
+        $struct_name:ident,
+        $table:path,
+        $model:ty,
+        $new_model:ty,
+        $update_model:ty
+    ) => {
+        pub struct $struct_name;
 
-pub struct RustaceanRepository;
+        impl $struct_name {
+            pub async fn find(c: &mut AsyncPgConnection, id: i32) -> QueryResult<$model> {
+                $table.find(id).get_result(c).await
+            }
 
-impl RustaceanRepository {
-    pub async fn find(c: &mut AsyncPgConnection, id: i32) -> QueryResult<Rustacean> {
-        rustaceans::table.find(id).get_result(c).await
-    }
+            pub async fn find_multiple(
+                c: &mut AsyncPgConnection,
+                limit: i64,
+            ) -> QueryResult<Vec<$model>> {
+                $table.limit(limit).load(c).await
+            }
 
-    pub async fn find_multiple(
-        c: &mut AsyncPgConnection,
-        limit: i64,
-    ) -> QueryResult<Vec<Rustacean>> {
-        rustaceans::table.limit(limit).load(c).await
-    }
+            pub async fn create(
+                c: &mut AsyncPgConnection,
+                new_item: $new_model,
+            ) -> QueryResult<$model> {
+                diesel::insert_into($table)
+                    .values(new_item)
+                    .get_result(c)
+                    .await
+            }
 
-    pub async fn create(
-        c: &mut AsyncPgConnection,
-        new_rustacean: NewRustacean,
-    ) -> QueryResult<Rustacean> {
-        diesel::insert_into(rustaceans::table)
-            .values(new_rustacean)
-            .get_result(c)
-            .await
-    }
+            pub async fn update(
+                c: &mut AsyncPgConnection,
+                id: i32,
+                patch: $update_model,
+            ) -> QueryResult<$model> {
+                diesel::update($table.find(id))
+                    .set(&patch)
+                    .get_result(c)
+                    .await
+            }
 
-    pub async fn update(
-        c: &mut AsyncPgConnection,
-        id: i32,
-        patch: UpdateRustacean,
-    ) -> QueryResult<Rustacean> {
-        diesel::update(rustaceans::table.find(id))
-            .set(&patch)
-            .get_result(c)
-            .await
-    }
-
-    pub async fn delete(c: &mut AsyncPgConnection, id: i32) -> QueryResult<usize> {
-        diesel::delete(rustaceans::table.find(id)).execute(c).await
-    }
+            pub async fn delete(c: &mut AsyncPgConnection, id: i32) -> QueryResult<usize> {
+                diesel::delete($table.find(id)).execute(c).await
+            }
+        }
+    };
 }
 
-pub struct CrateRepository;
+// Use the macro to generate the implementation for RustaceanRepository.
+implement_repository!(
+    RustaceanRepository,
+    rustaceans::table,
+    Rustacean,
+    NewRustacean,
+    UpdateRustacean
+);
 
-impl CrateRepository {
-    pub async fn find(c: &mut AsyncPgConnection, id: i32) -> QueryResult<Crate> {
-        crates::table.find(id).get_result(c).await
-    }
-
-    pub async fn find_multiple(c: &mut AsyncPgConnection, limit: i64) -> QueryResult<Vec<Crate>> {
-        crates::table.limit(limit).load(c).await
-    }
-
-    pub async fn create(c: &mut AsyncPgConnection, new_crate: NewCrate) -> QueryResult<Crate> {
-        diesel::insert_into(crates::table)
-            .values(new_crate)
-            .get_result(c)
-            .await
-    }
-
-    pub async fn update(
-        c: &mut AsyncPgConnection,
-        id: i32,
-        patch: UpdateCrate,
-    ) -> QueryResult<Crate> {
-        diesel::update(crates::table.find(id))
-            .set(&patch)
-            .get_result(c)
-            .await
-    }
-
-    pub async fn delete(c: &mut AsyncPgConnection, id: i32) -> QueryResult<usize> {
-        diesel::delete(crates::table.find(id)).execute(c).await
-    }
-}
+// Use the macro to generate the implementation for CrateRepository.
+implement_repository!(CrateRepository, crates::table, Crate, NewCrate, UpdateCrate);
