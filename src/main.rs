@@ -1,7 +1,17 @@
+use rocket::get;
+
 mod models;
 mod repositories;
 mod schema;
 
-fn main() {
-    println!("Hello, world!");
+#[get("/rustaceans")]
+fn get_rustaceans() {
+    //
+}
+#[rocket::main]
+async fn main() {
+    let _ = rocket::build()
+        .mount("/", rocket::routes![get_rustaceans])
+        .launch()
+        .await;
 }
