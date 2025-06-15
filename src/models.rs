@@ -46,3 +46,13 @@ pub struct UpdateRustacean {
     pub name: Option<String>,
     pub email: Option<String>,
 }
+
+#[derive(AsChangeset, Debug, Default)]
+#[diesel(table_name = crates)]
+pub struct UpdateCrate {
+    pub rustacean_id: Option<i32>,
+    pub name: Option<String>,
+    pub code: Option<String>,
+    pub version: Option<String>,
+    pub description: Option<Option<String>>,
+}

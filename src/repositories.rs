@@ -63,15 +63,13 @@ impl CrateRepository {
             .await
     }
 
-    pub async fn update(c: &mut AsyncPgConnection, a_crate: Crate) -> QueryResult<Crate> {
-        diesel::update(crates::table.find(a_crate.id))
-            .set((
-                crates::rustacean_id.eq(a_crate.rustacean_id),
-                crates::name.eq(a_crate.name.clone()),
-                crates::code.eq(a_crate.code.clone()),
-                crates::version.eq(a_crate.version.clone()),
-                crates::description.eq(a_crate.description.clone()),
-            ))
+    pub async fn update(
+        c: &mut AsyncPgConnection,
+        id: i32,
+        patch: UpdateCrate,
+    ) -> QueryResult<Crate> {
+        diesel::update(crates::table.find(id))
+            .set(&patch)
             .get_result(c)
             .await
     }
