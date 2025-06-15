@@ -1,5 +1,6 @@
-pub mod models;
-pub mod schema;
+mod models;
+mod repositories;
+mod schema;
 
 fn main() {
     println!("Hello, world!");
