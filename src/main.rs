@@ -2,6 +2,7 @@ use rocket_db_pools::Database;
 
 mod models;
 mod repositories;
+mod responses;
 mod rocket_routes;
 mod schema;
 
