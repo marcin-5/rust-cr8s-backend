@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-diesel = { version = "2.2", features = ["chrono"] }
-diesel-async = { version = "0.5", features = ["postgres"] }
-chrono = "0.4"
+diesel = { version = "2.1", features = ["chrono"] }
+diesel-async = { version = "0.4", features = ["postgres"] }
+chrono = { version = "0.4", features = ["serde"] }
 rocket = { version = "0.5", features = ["json"] }
+rocket_db_pools = { version = "0.2", features = ["diesel_postgres"] }
+serde = { version = "1.0", features = ["derive"] }
