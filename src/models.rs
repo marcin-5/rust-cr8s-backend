@@ -1,7 +1,7 @@
 use crate::schema::*;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Serialize)]
 #[diesel(table_name = rustaceans)]
@@ -12,7 +12,7 @@ pub struct Rustacean {
     pub created_at: NaiveDateTime,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Deserialize)]
 #[diesel(table_name = rustaceans)]
 pub struct NewRustacean {
     pub name: String,
@@ -41,7 +41,7 @@ pub struct NewCrate {
     pub description: Option<String>,
 }
 
-#[derive(AsChangeset, Debug)]
+#[derive(AsChangeset, Debug, Deserialize)]
 #[diesel(table_name = rustaceans)]
 pub struct UpdateRustacean {
     pub name: Option<String>,
