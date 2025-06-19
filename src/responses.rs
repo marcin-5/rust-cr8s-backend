@@ -6,7 +6,7 @@ use std::fmt::Debug;
 pub fn handle_db_error<E: Debug>(
     e: E,
     log_context: String,
-    response_context: &str,
+    response_context: String,
 ) -> Custom<Value> {
     eprintln!("{}: {:?}", log_context, e);
     Custom(
