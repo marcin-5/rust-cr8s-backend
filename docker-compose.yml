@@ -21,3 +21,5 @@ services:
       - "8000:8000"
     volumes:
       - ./:/app/
+      - ./fish_history:/root/.local/share/fish
+      - ./fish_config:/root/.config/fish

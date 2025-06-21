@@ -24,3 +24,7 @@ dist/
 
 ### dotenv template
 .env
+
+# Docker-specific
+/fish_config/
+/fish_history/
