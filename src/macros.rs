@@ -20,7 +20,7 @@ macro_rules! crud_handlers {
         use rocket_db_pools::Connection;
 
         type HandlerResult<T> = Result<T, Custom<Value>>;
-        type Db = Connection<crate::DbConn>;
+        type Db = Connection<crate::rocket_routes::DbConn>;
 
         #[rocket::get("/", rank = 1)]
         pub async fn $get_all_fn(mut db: Db) -> HandlerResult<Value> {
