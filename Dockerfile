@@ -2,13 +2,13 @@ FROM rust:latest
 LABEL authors="marcin"
 
 # Install fish shell and dependencies for plugins
-RUN apt-get update && apt-get install -y fish curl git fzf
+RUN apt-get update && apt-get install -y fish curl git fzf grc
 
 # Set up fish plugins and apply default config for tide plugin
 ENV FISH_CONFIG_DIR /root/.config/fish
 RUN mkdir -p $FISH_CONFIG_DIR/functions
 RUN curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish > $FISH_CONFIG_DIR/functions/fisher.fish
-RUN fish -c "fisher install IlanCosman/tide && fisher install jethrokuan/fzf"
+RUN fish -c "fisher install IlanCosman/tide && fisher install jethrokuan/fzf && fisher install jorgebucaran/autopair.fish && fisher install oh-my-fish/plugin-grc"
 RUN fish -c "tide configure --auto --style=Rainbow --prompt_colors='True color' --show_time='24-hour format' --rainbow_prompt_separators=Slanted --powerline_prompt_heads=Round --powerline_prompt_tails=Flat --powerline_prompt_style='Two lines, character and frame' --prompt_connection=Dotted --powerline_right_prompt_frame=No --prompt_connection_andor_frame_color=Dark --prompt_spacing=Sparse --icons='Many icons' --transient=Yes"
 
 # Backup the installed and configured settings
