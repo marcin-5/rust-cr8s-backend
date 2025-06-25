@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use reqwest::{blocking::Client, StatusCode};
 use rocket::serde::json::{serde_json::json, Value};
 use std::ops::Deref;
