@@ -99,6 +99,6 @@ pub fn create_test_crate_with_data<'a>(
 }
 
 /// Creates a crate with default data.
-pub fn create_test_crate<'a>(client: &'a Client, rustacean_id: i32) -> CrateGuard<'a> {
+pub fn create_test_crate(client: &Client, rustacean_id: i32) -> CrateGuard<'_> {
     create_test_crate_with_data(client, rustacean_id, "serde", "SERDE", "1.0")
 }
