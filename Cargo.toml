@@ -10,3 +10,6 @@ chrono = { version = "0.4", features = ["serde"] }
 rocket = { version = "0.5", features = ["json"] }
 rocket_db_pools = { version = "0.2", features = ["diesel_postgres"] }
 serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+reqwest = { version = "0.12", features = ["blocking", "json"] }
