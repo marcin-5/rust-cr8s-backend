@@ -50,12 +50,15 @@ macro_rules! crud_handlers {
             <$repo>::find(&mut db, id)
                 .await
                 .map(|item| json!(item))
-                .map_err(|e| {
-                    crate::responses::handle_db_error(
+                .map_err(|e| match e {
+                    diesel::result::Error::NotFound => {
+                        Custom(Status::NotFound, json!({ "error": "Not Found" }))
+                    }
+                    _ => crate::responses::handle_db_error(
                         e,
                         format!("Failed to fetch {} with id {}", $single_str, id),
                         format!("fetching {}", $single_str),
-                    )
+                    ),
                 })
         }
         #[rocket::post("/", format = "json", data = "<data>")]

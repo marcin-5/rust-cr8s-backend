@@ -73,6 +73,12 @@ fn test_view_crate() {
 
     let fetched_crate: Value = response.json().unwrap();
     assert_eq!(*a_crate, fetched_crate);
+
+    let response = client
+        .get(format!("{}/{}", CRATES_URL, 9999))
+        .send()
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::NOT_FOUND);
 }
 
 #[test]

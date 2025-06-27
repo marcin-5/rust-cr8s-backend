@@ -51,6 +51,12 @@ fn test_view_rustacean() {
 
     let fetched_rustacean: rocket::serde::json::Value = response.json().unwrap();
     assert_eq!(*rustacean, fetched_rustacean);
+
+    let response = client
+        .get(format!("{}/{}", RUSTACEANS_URL, 9999))
+        .send()
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::NOT_FOUND);
 }
 
 #[test]
