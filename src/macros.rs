@@ -56,12 +56,16 @@ macro_rules! crud_handlers {
             <$repo>::create(&mut db, data.into_inner())
                 .await
                 .map(|item| Custom(Status::Created, json!(item)))
-                .map_err(|e| {
-                    crate::responses::handle_db_error(
+                .map_err(|e| match e {
+                    diesel::result::Error::DatabaseError(
+                        diesel::result::DatabaseErrorKind::ForeignKeyViolation,
+                        _,
+                    ) => Custom(Status::NotFound, json!({ "error": "Not Found" })),
+                    _ => crate::responses::handle_db_error(
                         e,
                         format!("Failed to create {}", $single_str),
                         format!("creating {}", $single_str),
-                    )
+                    ),
                 })
         }
         #[rocket::put("/<id>", format = "json", data = "<data>")]
@@ -73,12 +77,16 @@ macro_rules! crud_handlers {
             <$repo>::update(&mut db, id, data.into_inner())
                 .await
                 .map(|item| json!(item))
-                .map_err(|e| {
-                    crate::responses::handle_db_error(
+                .map_err(|e| match e {
+                    diesel::result::Error::DatabaseError(
+                        diesel::result::DatabaseErrorKind::ForeignKeyViolation,
+                        _,
+                    ) => Custom(Status::NotFound, json!({ "error": "Not Found" })),
+                    _ => crate::responses::handle_db_error(
                         e,
                         format!("Failed to update {} with id {}", $single_str, id),
                         format!("updating {}", $single_str),
-                    )
+                    ),
                 })
         }
         #[rocket::delete("/<id>")]
