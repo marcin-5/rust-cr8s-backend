@@ -78,6 +78,31 @@ fn test_update_crate() {
 
     let updated_crate: Value = response.json().unwrap();
     assert_eq!(updated_crate["description"], json!("An ORM for Rust"));
+
+    // Test changing crate owner
+    let another_rustacean = create_test_rustacean(&client);
+    let another_rustacean_id = another_rustacean["id"].as_i64().unwrap() as i32;
+    let response = client
+        .put(format!("{}/{}", CRATES_URL, crate_id))
+        .json(&json!({
+            "rustacean_id": another_rustacean_id,
+        }))
+        .send()
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::OK);
+
+    let updated_crate: Value = response.json().unwrap();
+    assert_eq!(updated_crate["rustacean_id"], json!(another_rustacean_id));
+
+    // Test changing crate owner to non-existing rustacean
+    let response = client
+        .put(format!("{}/{}", CRATES_URL, crate_id))
+        .json(&json!({
+            "rustacean_id": 9999,
+        }))
+        .send()
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::NOT_FOUND);
 }
 
 #[test]
