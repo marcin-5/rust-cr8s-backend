@@ -41,6 +41,20 @@ fn test_create_crate() {
             "created_at": a_crate["created_at"],
         })
     );
+
+    // Test creating crate with non-existing rustacean
+    let (name, code, version) = ("another-crate", "ANO", "0.1");
+    let response = client
+        .post(CRATES_URL)
+        .json(&json!({
+            "rustacean_id": 9999,
+            "name": name,
+            "code": code,
+            "version": version,
+        }))
+        .send()
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::NOT_FOUND);
 }
 
 #[test]
