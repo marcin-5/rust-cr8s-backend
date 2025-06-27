@@ -22,6 +22,16 @@ macro_rules! crud_handlers {
         type HandlerResult<T> = Result<T, Custom<Value>>;
         type Db = Connection<crate::rocket_routes::DbConn>;
 
+        fn map_foreign_key_error(e: diesel::result::Error, default: impl FnOnce(diesel::result::Error) -> Custom<Value>) -> Custom<Value> {
+            match e {
+                diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::ForeignKeyViolation,
+                    _,
+                ) => Custom(Status::NotFound, json!({ "error": "Not Found" })),
+                e => default(e),
+            }
+        }
+
         #[rocket::get("/", rank = 1)]
         pub async fn $get_all_fn(mut db: Db) -> HandlerResult<Value> {
             <$repo>::find_multiple(&mut db, 100)
@@ -56,17 +66,13 @@ macro_rules! crud_handlers {
             <$repo>::create(&mut db, data.into_inner())
                 .await
                 .map(|item| Custom(Status::Created, json!(item)))
-                .map_err(|e| match e {
-                    diesel::result::Error::DatabaseError(
-                        diesel::result::DatabaseErrorKind::ForeignKeyViolation,
-                        _,
-                    ) => Custom(Status::NotFound, json!({ "error": "Not Found" })),
-                    _ => crate::responses::handle_db_error(
+                .map_err(|e| map_foreign_key_error(e, |e| {
+                    crate::responses::handle_db_error(
                         e,
                         format!("Failed to create {}", $single_str),
                         format!("creating {}", $single_str),
-                    ),
-                })
+                    )
+                }))
         }
         #[rocket::put("/<id>", format = "json", data = "<data>")]
         pub async fn $update_fn(
@@ -77,17 +83,13 @@ macro_rules! crud_handlers {
             <$repo>::update(&mut db, id, data.into_inner())
                 .await
                 .map(|item| json!(item))
-                .map_err(|e| match e {
-                    diesel::result::Error::DatabaseError(
-                        diesel::result::DatabaseErrorKind::ForeignKeyViolation,
-                        _,
-                    ) => Custom(Status::NotFound, json!({ "error": "Not Found" })),
-                    _ => crate::responses::handle_db_error(
+                .map_err(|e| map_foreign_key_error(e, |e| {
+                    crate::responses::handle_db_error(
                         e,
                         format!("Failed to update {} with id {}", $single_str, id),
                         format!("updating {}", $single_str),
-                    ),
-                })
+                    )
+                }))
         }
         #[rocket::delete("/<id>")]
         pub async fn $delete_fn(mut db: Db, id: i32) -> HandlerResult<NoContent> {
