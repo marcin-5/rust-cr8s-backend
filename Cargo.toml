@@ -8,6 +8,7 @@ default-run = "server"
 diesel = { version = "2.1", features = ["chrono"] }
 diesel-async = { version = "0.4", features = ["postgres"] }
 chrono = { version = "0.4", features = ["serde"] }
+clap = "4.5"
 rocket = { version = "0.5", features = ["json"] }
 rocket_db_pools = { version = "0.2", features = ["diesel_postgres"] }
 serde = { version = "1.0", features = ["derive"] }
