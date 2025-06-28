@@ -2,6 +2,7 @@
 name = "backend"
 version = "0.1.0"
 edition = "2024"
+default-run = "server"
 
 [dependencies]
 diesel = { version = "2.1", features = ["chrono"] }
