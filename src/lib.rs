@@ -1,3 +1,4 @@
+pub mod commands;
 mod macros;
 mod models;
 mod repositories;

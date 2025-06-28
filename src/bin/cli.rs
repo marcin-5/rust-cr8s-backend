@@ -1,9 +1,12 @@
 extern crate backend;
+
+use backend::commands::create_user;
 use clap::{Arg, Command};
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let matches = build_cli().get_matches();
-    handle_commands(matches);
+    handle_commands(matches).await;
 }
 
 fn build_cli() -> Command {
@@ -47,25 +50,36 @@ fn build_delete_user_command() -> Command {
         .arg(Arg::new("id").required(true))
 }
 
-fn handle_commands(matches: clap::ArgMatches) {
+async fn handle_commands(matches: clap::ArgMatches) {
     match matches.subcommand() {
-        Some(("users", sub_matches)) => handle_users_commands(sub_matches),
+        Some(("users", sub_matches)) => handle_users_commands(sub_matches).await,
         _ => unreachable!(),
     }
 }
 
-fn handle_users_commands(sub_matches: &clap::ArgMatches) {
+async fn handle_users_commands(sub_matches: &clap::ArgMatches) {
     match sub_matches.subcommand() {
-        Some(("create", create_matches)) => handle_create_user(create_matches),
+        Some(("create", create_matches)) => handle_create_user(create_matches).await,
         Some(("list", _)) => handle_list_users(),
         Some(("delete", delete_matches)) => handle_delete_user(delete_matches),
         _ => unreachable!(),
     }
 }
 
-fn handle_create_user(_matches: &clap::ArgMatches) {
-    // TODO: Implement user creation logic
-    println!("Creating user...");
+async fn handle_create_user(_matches: &clap::ArgMatches) {
+    let username = _matches
+        .get_one::<String>("username")
+        .expect("Username is required");
+    let password = _matches
+        .get_one::<String>("password")
+        .expect("Password is required");
+    let roles: Vec<String> = _matches
+        .get_many::<String>("roles")
+        .expect("Roles are required")
+        .map(|v| v.to_owned())
+        .collect();
+
+    create_user(username.to_owned(), password.to_owned(), roles).await
 }
 
 fn handle_list_users() {

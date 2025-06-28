@@ -58,7 +58,7 @@ pub struct UpdateCrate {
     pub description: Option<Option<String>>,
 }
 
-#[derive(Queryable)]
+#[derive(Queryable, Debug)]
 pub struct User {
     pub id: i32,
     pub username: String,
