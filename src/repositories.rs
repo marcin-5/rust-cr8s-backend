@@ -4,15 +4,15 @@ use crate::schema::*;
 use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 
-/// A macro to generate a full repository implementation for a given data model.
-/// This abstracts away the boilerplate CRUD logic.
+/// A macro to generate a repository implementation for a given data model.
+/// This abstracts away the boilerplate CRUD logic. The update functionality is optional.
 macro_rules! implement_repository {
     (
         $struct_name:ident,
         $table:path,
         $model:ty,
-        $new_model:ty,
-        $update_model:ty
+        $new_model:ty
+        $(, update: $update_model:ty)? // Optional: The model used for updates
     ) => {
         pub struct $struct_name;
 
@@ -38,16 +38,19 @@ macro_rules! implement_repository {
                     .await
             }
 
-            pub async fn update(
-                c: &mut AsyncPgConnection,
-                id: i32,
-                patch: $update_model,
-            ) -> QueryResult<$model> {
-                diesel::update($table.find(id))
-                    .set(&patch)
-                    .get_result(c)
-                    .await
-            }
+            // This block is only generated if the 'update' model is provided.
+            $(
+                pub async fn update(
+                    c: &mut AsyncPgConnection,
+                    id: i32,
+                    patch: $update_model,
+                ) -> QueryResult<$model> {
+                    diesel::update($table.find(id))
+                        .set(&patch)
+                        .get_result(c)
+                        .await
+                }
+            )?
 
             pub async fn delete(c: &mut AsyncPgConnection, id: i32) -> QueryResult<usize> {
                 diesel::delete($table.find(id)).execute(c).await
@@ -62,8 +65,20 @@ implement_repository!(
     rustaceans::table,
     Rustacean,
     NewRustacean,
-    UpdateRustacean
+    update: UpdateRustacean
 );
 
 // Use the macro to generate the implementation for CrateRepository.
-implement_repository!(CrateRepository, crates::table, Crate, NewCrate, UpdateCrate);
+implement_repository!(
+    CrateRepository,
+    crates::table,
+    Crate,
+    NewCrate,
+    update: UpdateCrate
+);
+
+// Use the macro to generate the implementation for UserRepository.
+implement_repository!(UserRepository, users::table, User, NewUser);
+
+// Use the macro to generate the implementation for RoleRepository.
+implement_repository!(RoleRepository, roles::table, Role, NewRole);
