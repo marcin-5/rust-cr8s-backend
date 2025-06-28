@@ -1,6 +1,6 @@
-pub mod macros;
-pub mod models;
-pub mod repositories;
-pub mod responses;
+mod macros;
+mod models;
+mod repositories;
+mod responses;
 pub mod rocket_routes;
-pub mod schema;
+mod schema;
