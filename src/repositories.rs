@@ -2,7 +2,7 @@ use crate::models::*;
 #[allow(unused_imports)]
 use crate::schema::*;
 use diesel::prelude::*;
-use diesel_async::{AsyncPgConnection, RunQueryDsl};
+use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
 
 /// A macro to generate a repository implementation for a given data model.
 /// This abstracts away the boilerplate CRUD logic. The update functionality is optional.
@@ -77,11 +77,37 @@ implement_repository!(
     update: UpdateCrate
 );
 
-// Generate the base implementation for UserRepository
-implement_repository!(UserRepository, users::table, User, NewUser);
+pub struct UserRepository;
 
 // Add custom methods to UserRepository
 impl UserRepository {
+    pub async fn find_with_roles(
+        c: &mut AsyncPgConnection,
+    ) -> QueryResult<Vec<(User, Vec<(UserRole, Role)>)>> {
+        let users = users::table.load::<User>(c).await?;
+        let result = user_roles::table
+            .inner_join(roles::table)
+            .load::<(UserRole, Role)>(c)
+            .await?
+            .grouped_by(&users);
+        Ok(users.into_iter().zip(result).collect())
+    }
+
+    pub async fn delete(c: &mut AsyncPgConnection, id: i32) -> QueryResult<usize> {
+        c.transaction(|conn| {
+            Box::pin(async move {
+                // First, delete the associated user roles
+                diesel::delete(user_roles::table.filter(user_roles::user_id.eq(id)))
+                    .execute(conn)
+                    .await?;
+
+                // Then, delete the user
+                diesel::delete(users::table.find(id)).execute(conn).await
+            })
+        })
+        .await
+    }
+
     pub async fn create_with_roles(
         c: &mut AsyncPgConnection,
         new_user: NewUser,
