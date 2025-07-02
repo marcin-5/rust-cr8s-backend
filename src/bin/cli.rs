@@ -70,14 +70,14 @@ async fn handle_users_commands(sub_matches: &clap::ArgMatches) {
     }
 }
 
-async fn handle_create_user(_matches: &clap::ArgMatches) {
-    let username = _matches
+async fn handle_create_user(matches: &clap::ArgMatches) {
+    let username = matches
         .get_one::<String>("username")
         .expect("Username is required");
-    let password = _matches
+    let password = matches
         .get_one::<String>("password")
         .expect("Password is required");
-    let roles: Vec<String> = _matches
+    let roles: Vec<String> = matches
         .get_many::<String>("roles")
         .expect("Roles are required")
         .map(|v| v.to_owned())
