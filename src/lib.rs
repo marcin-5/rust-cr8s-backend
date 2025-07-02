@@ -1,3 +1,4 @@
+mod auth;
 pub mod commands;
 mod macros;
 mod models;
