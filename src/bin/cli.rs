@@ -1,7 +1,7 @@
 extern crate backend;
 
-use backend::commands::create_user;
-use clap::{Arg, Command};
+use backend::commands::{create_user, delete_user, list_users};
+use clap::{value_parser, Arg, Command};
 
 #[tokio::main]
 async fn main() {
@@ -47,7 +47,11 @@ fn build_delete_user_command() -> Command {
     Command::new("delete")
         .about("Delete user by ID")
         .arg_required_else_help(true)
-        .arg(Arg::new("id").required(true))
+        .arg(
+            Arg::new("id")
+                .required(true)
+                .value_parser(value_parser!(i32)),
+        )
 }
 
 async fn handle_commands(matches: clap::ArgMatches) {
@@ -60,8 +64,8 @@ async fn handle_commands(matches: clap::ArgMatches) {
 async fn handle_users_commands(sub_matches: &clap::ArgMatches) {
     match sub_matches.subcommand() {
         Some(("create", create_matches)) => handle_create_user(create_matches).await,
-        Some(("list", _)) => handle_list_users(),
-        Some(("delete", delete_matches)) => handle_delete_user(delete_matches),
+        Some(("list", _)) => handle_list_users().await,
+        Some(("delete", delete_matches)) => handle_delete_user(delete_matches).await,
         _ => unreachable!(),
     }
 }
@@ -82,12 +86,10 @@ async fn handle_create_user(_matches: &clap::ArgMatches) {
     create_user(username.to_owned(), password.to_owned(), roles).await
 }
 
-fn handle_list_users() {
-    // TODO: Implement user listing logic
-    println!("Listing users...");
+async fn handle_list_users() {
+    list_users().await;
 }
 
-fn handle_delete_user(_matches: &clap::ArgMatches) {
-    // TODO: Implement user deletion logic
-    println!("Deleting user...");
+async fn handle_delete_user(matches: &clap::ArgMatches) {
+    delete_user(matches.get_one::<i32>("id").unwrap().to_owned()).await;
 }
