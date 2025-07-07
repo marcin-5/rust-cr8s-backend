@@ -5,6 +5,7 @@ use rocket::serde::json::{serde_json::json, Value};
 use std::ops::Deref;
 
 // --- Constants ---
+pub const SERVER_URL: &str = "http://127.0.0.1:8000";
 pub const RUSTACEANS_URL: &str = "http://127.0.0.1:8000/rustaceans";
 pub const CRATES_URL: &str = "http://127.0.0.1:8000/crates";
 
