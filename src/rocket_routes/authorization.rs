@@ -1,6 +1,7 @@
 use crate::auth::{authorize_user, Credentials};
 use crate::repositories::UserRepository;
 use crate::rocket_routes::{server_error, CacheConn, DbConn};
+use diesel::result::Error as DieselError;
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::{serde_json::json, Json, Value};
@@ -13,9 +14,13 @@ pub async fn login(
     mut cache: Connection<CacheConn>,
     credentials: Json<Credentials>,
 ) -> Result<Value, Custom<Value>> {
-    let user = UserRepository::find_by_username(&mut db, &credentials.username)
-        .await
-        .map_err(|e| server_error(e.into()))?;
+    let user = match UserRepository::find_by_username(&mut db, &credentials.username).await {
+        Ok(user) => user,
+        Err(DieselError::NotFound) => {
+            return Err(Custom(Status::Unauthorized, json!("Wrong credentials")));
+        }
+        Err(e) => return Err(server_error(e.into())),
+    };
 
     let session_id = authorize_user(&user, credentials.into_inner())
         .map_err(|_| Custom(Status::Unauthorized, json!("Wrong credentials")))?;
