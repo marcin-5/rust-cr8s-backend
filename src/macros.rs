@@ -33,7 +33,7 @@ macro_rules! crud_handlers {
         }
 
         #[rocket::get("/", rank = 1)]
-        pub async fn $get_all_fn(mut db: Db) -> HandlerResult<Value> {
+        pub async fn $get_all_fn(mut db: Db, _user: crate::models::User) -> HandlerResult<Value> {
             <$repo>::find_multiple(&mut db, 100)
                 .await
                 .map(|items| json!(items))
@@ -46,7 +46,7 @@ macro_rules! crud_handlers {
                 })
         }
         #[rocket::get("/<id>")]
-        pub async fn $view_fn(mut db: Db, id: i32) -> HandlerResult<Value> {
+        pub async fn $view_fn(mut db: Db, id: i32, _user: crate::models::User) -> HandlerResult<Value> {
             <$repo>::find(&mut db, id)
                 .await
                 .map(|item| json!(item))
@@ -65,6 +65,7 @@ macro_rules! crud_handlers {
         pub async fn $create_fn(
             mut db: Db,
             data: Json<$new_model>,
+            _user: crate::models::User,
         ) -> HandlerResult<Custom<Value>> {
             <$repo>::create(&mut db, data.into_inner())
                 .await
@@ -82,6 +83,7 @@ macro_rules! crud_handlers {
             mut db: Db,
             id: i32,
             data: Json<$update_model>,
+            _user: crate::models::User,
         ) -> HandlerResult<Value> {
             <$repo>::update(&mut db, id, data.into_inner())
                 .await
@@ -95,7 +97,7 @@ macro_rules! crud_handlers {
                 }))
         }
         #[rocket::delete("/<id>")]
-        pub async fn $delete_fn(mut db: Db, id: i32) -> HandlerResult<NoContent> {
+        pub async fn $delete_fn(mut db: Db, id: i32, _user: crate::models::User) -> HandlerResult<NoContent> {
             <$repo>::delete(&mut db, id)
                 .await
                 .map(|_| NoContent)
