@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
-use reqwest::{blocking::Client, StatusCode};
+use reqwest::{blocking::Client, blocking::ClientBuilder, header, StatusCode};
 use rocket::serde::json::{serde_json::json, Value};
 use std::ops::Deref;
+use std::process::Command;
 
 // --- Constants ---
 pub const SERVER_URL: &str = "http://127.0.0.1:8000";
@@ -104,4 +105,48 @@ pub fn create_test_crate_with_data<'a>(
 /// Creates a crate with default data.
 pub fn create_test_crate(client: &Client, rustacean_id: i32) -> CrateGuard<'_> {
     create_test_crate_with_data(client, rustacean_id, "serde", "SERDE", "1.0")
+}
+
+/// Creates and returns a new `reqwest::Client` instance with the default headers
+/// configured for an authenticated admin user.
+pub fn get_client_with_logged_in_admin() -> Client {
+    let create_user_args = [
+        "run",
+        "--bin",
+        "cli",
+        "users",
+        "create",
+        "test_admin",
+        "1234",
+        "admin",
+    ];
+    let _ = Command::new("cargo")
+        .args(create_user_args)
+        .output()
+        .unwrap();
+
+    let client = Client::new();
+    let response = client
+        .post(format!("{}/login", SERVER_URL))
+        .json(&json!({
+            "username": "test_admin",
+            "password": "1234",
+        }))
+        .send()
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let json: Value = response.json().unwrap();
+    assert!(json.get("token").is_some());
+    let header_value = format!("Bearer {}", json["token"].as_str().unwrap());
+
+    let mut headers = header::HeaderMap::new();
+    headers.insert(
+        header::AUTHORIZATION,
+        header::HeaderValue::from_str(&header_value).unwrap(),
+    );
+
+    ClientBuilder::new()
+        .default_headers(headers)
+        .build()
+        .unwrap()
 }
