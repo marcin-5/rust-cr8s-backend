@@ -128,7 +128,7 @@ implement_repository!(
 // Use the macro to generate the implementation for CrateRepository.
 implement_repository!(CrateRepository, crates::table, Crate, NewCrate, UpdateCrate);
 
-pub struct UserRepository;
+implement_repository!(UserRepository, users::table, User, NewUser, { find });
 
 // Add custom methods to UserRepository
 impl UserRepository {
