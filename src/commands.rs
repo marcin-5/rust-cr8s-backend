@@ -1,4 +1,3 @@
-use argon2::PasswordHasher;
 use diesel_async::{AsyncConnection, AsyncPgConnection};
 
 use crate::{
