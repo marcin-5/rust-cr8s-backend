@@ -1,4 +1,3 @@
-use reqwest::blocking::Client;
 use rocket::serde::json::serde_json::json;
 
 mod common;
@@ -6,7 +5,7 @@ use common::{create_test_rustacean, create_test_rustacean_with_data, RUSTACEANS_
 
 #[test]
 fn test_get_rustaceans() {
-    let client = Client::new();
+    let client = common::get_client_with_logged_in_admin();
     let rustacean1 = create_test_rustacean(&client);
     let rustacean2 = create_test_rustacean(&client);
 
@@ -20,7 +19,7 @@ fn test_get_rustaceans() {
 
 #[test]
 fn test_create_rustacean() {
-    let client = Client::new();
+    let client = common::get_client_with_logged_in_admin();
     let name = "John Smith";
     let email = "john@smith.com";
 
@@ -39,7 +38,7 @@ fn test_create_rustacean() {
 
 #[test]
 fn test_view_rustacean() {
-    let client = Client::new();
+    let client = common::get_client_with_logged_in_admin();
     let rustacean = create_test_rustacean(&client);
     let rustacean_id = rustacean["id"].clone();
 
@@ -61,7 +60,7 @@ fn test_view_rustacean() {
 
 #[test]
 fn test_update_rustacean() {
-    let client = Client::new();
+    let client = common::get_client_with_logged_in_admin();
     let rustacean = create_test_rustacean(&client);
     let rustacean_id = rustacean["id"].clone();
 
@@ -89,7 +88,7 @@ fn test_update_rustacean() {
 
 #[test]
 fn test_delete_rustacean() {
-    let client = Client::new();
+    let client = common::get_client_with_logged_in_admin();
     let rustacean = create_test_rustacean(&client);
     let rustacean_id = rustacean["id"].clone();
 

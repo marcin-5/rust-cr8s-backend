@@ -1,4 +1,3 @@
-use reqwest::blocking::Client;
 use rocket::serde::json::{serde_json::json, Value};
 
 mod common;
@@ -6,7 +5,7 @@ use common::{create_test_crate, create_test_crate_with_data, create_test_rustace
 
 #[test]
 fn test_get_crates() {
-    let client = Client::new();
+    let client = common::get_client_with_logged_in_admin();
     let rustacean = create_test_rustacean(&client);
     let rustacean_id = rustacean["id"].as_i64().unwrap() as i32;
     let crate1 = create_test_crate(&client, rustacean_id);
@@ -22,7 +21,7 @@ fn test_get_crates() {
 
 #[test]
 fn test_create_crate() {
-    let client = Client::new();
+    let client = common::get_client_with_logged_in_admin();
     let rustacean = create_test_rustacean(&client);
     let rustacean_id = rustacean["id"].as_i64().unwrap() as i32;
     let (name, code, version) = ("diesel", "DIESEL", "2.0");
@@ -59,7 +58,7 @@ fn test_create_crate() {
 
 #[test]
 fn test_view_crate() {
-    let client = Client::new();
+    let client = common::get_client_with_logged_in_admin();
     let rustacean = create_test_rustacean(&client);
     let rustacean_id = rustacean["id"].as_i64().unwrap() as i32;
     let a_crate = create_test_crate(&client, rustacean_id);
@@ -83,7 +82,7 @@ fn test_view_crate() {
 
 #[test]
 fn test_update_crate() {
-    let client = Client::new();
+    let client = common::get_client_with_logged_in_admin();
     let rustacean = create_test_rustacean(&client);
     let rustacean_id = rustacean["id"].as_i64().unwrap() as i32;
     let a_crate = create_test_crate(&client, rustacean_id);
@@ -127,7 +126,7 @@ fn test_update_crate() {
 
 #[test]
 fn test_delete_crate() {
-    let client = Client::new();
+    let client = common::get_client_with_logged_in_admin();
     let rustacean = create_test_rustacean(&client);
     let rustacean_id = rustacean["id"].as_i64().unwrap() as i32;
     let a_crate = create_test_crate(&client, rustacean_id);
