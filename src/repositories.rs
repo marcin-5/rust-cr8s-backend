@@ -5,56 +5,113 @@ use diesel::prelude::*;
 use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
 
 /// A macro to generate a repository implementation for a given data model.
-/// This abstracts away the boilerplate CRUD logic. The update functionality is optional.
+/// This abstracts away the boilerplate CRUD logic.
 macro_rules! implement_repository {
+    // With an explicit list of methods to generate
+    (
+        $struct_name:ident,
+        $table:path,
+        $model:ty,
+        $new_model:ty,
+        { $($method:ident $(($($arg:ty),*))?),* }
+    ) => {
+        pub struct $struct_name;
+
+        impl $struct_name {
+            $(
+                implement_repository!(@method $method, $table, $model, $new_model, $($($arg),*)?);
+            )*
+        }
+    };
+
+    // With no methods specified, generate all (including update)
+    (
+        $struct_name:ident,
+        $table:path,
+        $model:ty,
+        $new_model:ty,
+        $update_model:ty
+    ) => {
+        implement_repository!(
+            $struct_name,
+            $table,
+            $model,
+            $new_model,
+            {
+                find,
+                find_multiple,
+                create,
+                update($update_model),
+                delete
+            }
+        );
+    };
+
+    // With no methods specified, generate all (excluding update)
     (
         $struct_name:ident,
         $table:path,
         $model:ty,
         $new_model:ty
-        $(, update: $update_model:ty)? // Optional: The model used for updates
     ) => {
-        pub struct $struct_name;
-
-        impl $struct_name {
-            pub async fn find(c: &mut AsyncPgConnection, id: i32) -> QueryResult<$model> {
-                $table.find(id).get_result(c).await
+        implement_repository!(
+            $struct_name,
+            $table,
+            $model,
+            $new_model,
+            {
+                find,
+                find_multiple,
+                create,
+                delete
             }
+        );
+    };
 
-            pub async fn find_multiple(
-                c: &mut AsyncPgConnection,
-                limit: i64,
-            ) -> QueryResult<Vec<$model>> {
-                $table.limit(limit).load(c).await
-            }
+    // Internal helpers to generate method implementations
+    (@method find, $table:path, $model:ty, $_new_model:ty, ) => {
+        pub async fn find(c: &mut AsyncPgConnection, id: i32) -> QueryResult<$model> {
+            $table.find(id).get_result(c).await
+        }
+    };
 
-            pub async fn create(
-                c: &mut AsyncPgConnection,
-                new_item: $new_model,
-            ) -> QueryResult<$model> {
-                diesel::insert_into($table)
-                    .values(new_item)
-                    .get_result(c)
-                    .await
-            }
+    (@method find_multiple, $table:path, $model:ty, $_new_model:ty, ) => {
+        pub async fn find_multiple(
+            c: &mut AsyncPgConnection,
+            limit: i64,
+        ) -> QueryResult<Vec<$model>> {
+            $table.limit(limit).load(c).await
+        }
+    };
 
-            // This block is only generated if the 'update' model is provided.
-            $(
-                pub async fn update(
-                    c: &mut AsyncPgConnection,
-                    id: i32,
-                    patch: $update_model,
-                ) -> QueryResult<$model> {
-                    diesel::update($table.find(id))
-                        .set(&patch)
-                        .get_result(c)
-                        .await
-                }
-            )?
+    (@method create, $table:path, $model:ty, $new_model:ty, ) => {
+        pub async fn create(
+            c: &mut AsyncPgConnection,
+            new_item: $new_model,
+        ) -> QueryResult<$model> {
+            diesel::insert_into($table)
+                .values(new_item)
+                .get_result(c)
+                .await
+        }
+    };
 
-            pub async fn delete(c: &mut AsyncPgConnection, id: i32) -> QueryResult<usize> {
-                diesel::delete($table.find(id)).execute(c).await
-            }
+    (@method update, $table:path, $model:ty, $_new_model:ty, $update_model:ty) => {
+        pub async fn update(
+            c: &mut AsyncPgConnection,
+            id: i32,
+            patch: $update_model,
+        ) -> QueryResult<$model> {
+            diesel::update($table.find(id))
+                .set(&patch)
+                .get_result(c)
+                .await
+        }
+    };
+
+    (@method delete, $table:path, $model:ty, $_new_model:ty, ) => {
+        pub async fn delete(c: &mut AsyncPgConnection, id: i32) -> QueryResult<usize> {
+            diesel::delete($table.find(id)).execute(c).await
         }
     };
 }
@@ -65,17 +122,11 @@ implement_repository!(
     rustaceans::table,
     Rustacean,
     NewRustacean,
-    update: UpdateRustacean
+    UpdateRustacean
 );
 
 // Use the macro to generate the implementation for CrateRepository.
-implement_repository!(
-    CrateRepository,
-    crates::table,
-    Crate,
-    NewCrate,
-    update: UpdateCrate
-);
+implement_repository!(CrateRepository, crates::table, Crate, NewCrate, UpdateCrate);
 
 pub struct UserRepository;
 
@@ -156,7 +207,7 @@ impl UserRepository {
 }
 
 // Generate the base implementation for RoleRepository
-implement_repository!(RoleRepository, roles::table, Role, NewRole);
+implement_repository!(RoleRepository, roles::table, Role, NewRole, { create });
 
 // Add custom methods to RoleRepository
 impl RoleRepository {
