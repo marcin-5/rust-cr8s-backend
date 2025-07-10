@@ -107,9 +107,8 @@ pub fn create_test_crate(client: &Client, rustacean_id: i32) -> CrateGuard<'_> {
     create_test_crate_with_data(client, rustacean_id, "serde", "SERDE", "1.0")
 }
 
-/// Creates and returns a new `reqwest::Client` instance with the default headers
-/// configured for an authenticated admin user.
-pub fn get_client_with_logged_in_admin() -> Client {
+/// Creates a test admin user.
+pub fn create_test_admin_user() {
     let create_user_args = [
         "run",
         "--bin",
@@ -120,12 +119,15 @@ pub fn get_client_with_logged_in_admin() -> Client {
         "1234",
         "admin",
     ];
+    // We ignore the result, as the user may already exist.
     let _ = Command::new("cargo")
         .args(create_user_args)
         .output()
         .unwrap();
+}
 
-    let client = Client::new();
+/// Logs in as admin and returns the authentication token.
+pub fn get_admin_token(client: &Client) -> String {
     let response = client
         .post(format!("{}/login", SERVER_URL))
         .json(&json!({
@@ -137,7 +139,17 @@ pub fn get_client_with_logged_in_admin() -> Client {
     assert_eq!(response.status(), StatusCode::OK);
     let json: Value = response.json().unwrap();
     assert!(json.get("token").is_some());
-    let header_value = format!("Bearer {}", json["token"].as_str().unwrap());
+    json["token"].as_str().unwrap().to_string()
+}
+
+/// Creates and returns a new `reqwest::Client` instance with the default headers
+/// configured for an authenticated admin user.
+pub fn get_client_with_logged_in_admin() -> Client {
+    create_test_admin_user();
+
+    let client = Client::new();
+    let token = get_admin_token(&client);
+    let header_value = format!("Bearer {}", token);
 
     let mut headers = header::HeaderMap::new();
     headers.insert(
