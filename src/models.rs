@@ -111,7 +111,7 @@ pub struct NewUserRole {
     pub role_id: i32,
 }
 
-#[derive(AsExpression, Debug, FromSqlRow)]
+#[derive(AsExpression, Debug, FromSqlRow, PartialEq, Eq, Hash, Clone)]
 #[diesel(sql_type=Text)]
 pub enum RoleCode {
     Admin,

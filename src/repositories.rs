@@ -2,7 +2,9 @@ use crate::models::*;
 #[allow(unused_imports)]
 use crate::schema::*;
 use diesel::prelude::*;
+use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
+use std::collections::HashSet;
 
 /// A macro to generate a repository implementation for a given data model.
 /// This abstracts away the boilerplate CRUD logic.
@@ -174,50 +176,85 @@ impl UserRepository {
         new_user: NewUser,
         role_codes: Vec<RoleCode>,
     ) -> QueryResult<User> {
-        let user = diesel::insert_into(users::table)
-            .values(new_user)
-            .get_result::<User>(c)
-            .await?;
-        for role_code in role_codes {
-            let new_user_role = {
-                if let Ok(role) = RoleRepository::find_by_code(c, &role_code).await {
-                    NewUserRole {
-                        user_id: user.id,
-                        role_id: role.id,
-                    }
-                } else {
-                    let name = role_code.to_string();
-                    let new_role = NewRole {
-                        code: role_code,
-                        name,
-                    };
-                    let role = RoleRepository::create(c, new_role).await?;
-                    NewUserRole {
-                        user_id: user.id,
-                        role_id: role.id,
-                    }
+        c.transaction(|conn| {
+            async move {
+                // 1. Create the user
+                let user = diesel::insert_into(users::table)
+                    .values(new_user)
+                    .get_result::<User>(conn)
+                    .await?;
+
+                if role_codes.is_empty() {
+                    return Ok(user);
                 }
-            };
-            diesel::insert_into(user_roles::table)
-                .values(new_user_role)
-                .get_result::<UserRole>(c)
-                .await?;
-        }
-        Ok(user)
+
+                // 2. Find which roles already exist in one query
+                let existing_roles = roles::table
+                    .filter(roles::code.eq_any(&role_codes))
+                    .load::<Role>(conn)
+                    .await?;
+
+                // 3. Determine which roles are new
+                let existing_role_codes: HashSet<_> =
+                    existing_roles.iter().map(|r| r.code.clone()).collect();
+                let roles_to_create: Vec<_> = role_codes
+                    .into_iter()
+                    .filter(|rc| !existing_role_codes.contains(rc))
+                    .map(|rc| NewRole {
+                        name: rc.to_string(),
+                        code: rc,
+                    })
+                    .collect();
+
+                // 4. Create all new roles in a single batch insert
+                let created_roles = if !roles_to_create.is_empty() {
+                    diesel::insert_into(roles::table)
+                        .values(&roles_to_create)
+                        .get_results::<Role>(conn)
+                        .await?
+                } else {
+                    Vec::new()
+                };
+
+                // 5. Combine existing and new roles and create the associations in a single batch
+                let all_role_ids: Vec<_> = existing_roles
+                    .iter()
+                    .map(|r| r.id)
+                    .chain(created_roles.iter().map(|r| r.id))
+                    .collect();
+
+                let new_user_roles: Vec<_> = all_role_ids
+                    .into_iter()
+                    .map(|role_id_val| NewUserRole {
+                        user_id: user.id,
+                        role_id: role_id_val,
+                    })
+                    .collect();
+
+                diesel::insert_into(user_roles::table)
+                    .values(&new_user_roles)
+                    .execute(conn)
+                    .await?;
+
+                Ok(user)
+            }
+            .scope_boxed()
+        })
+        .await
     }
 }
 
 // Generate the base implementation for RoleRepository
-implement_repository!(RoleRepository, roles::table, Role, NewRole, { create });
+implement_repository!(RoleRepository, roles::table, Role, NewRole, {});
 
 // Add custom methods to RoleRepository
 impl RoleRepository {
     pub async fn find_by_ids(c: &mut AsyncPgConnection, ids: Vec<i32>) -> QueryResult<Vec<Role>> {
         roles::table.filter(roles::id.eq_any(ids)).load(c).await
     }
-    pub async fn find_by_code(c: &mut AsyncPgConnection, code: &RoleCode) -> QueryResult<Role> {
-        roles::table.filter(roles::code.eq(code)).first(c).await
-    }
+    // pub async fn find_by_code(c: &mut AsyncPgConnection, code: &RoleCode) -> QueryResult<Role> {
+    //     roles::table.filter(roles::code.eq(code)).first(c).await
+    // }
     pub async fn find_by_user(c: &mut AsyncPgConnection, user: &User) -> QueryResult<Vec<Role>> {
         let user_roles = UserRole::belonging_to(&user)
             .get_results::<UserRole>(c)
