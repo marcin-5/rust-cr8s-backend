@@ -1,5 +1,5 @@
-use crate::models::User;
-use crate::repositories::UserRepository;
+use crate::models::{RoleCode, User};
+use crate::repositories::{RoleRepository, UserRepository};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
 use rocket::response::status::Custom;
@@ -59,5 +59,51 @@ impl<'r> FromRequest<'r> for User {
         }
 
         Outcome::Error((Status::Unauthorized, ()))
+    }
+}
+
+pub struct EditorUser(User);
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for EditorUser {
+    type Error = ();
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let user = match req.guard::<User>().await {
+            Outcome::Success(user) => user,
+            Outcome::Error(e) => return Outcome::Error(e),
+            Outcome::Forward(s) => return Outcome::Forward(s),
+        };
+
+        let mut db = match req.guard::<Connection<DbConn>>().await {
+            Outcome::Success(db) => db,
+            _ => {
+                // Catches Error and Forward
+                rocket::error!("Failed to retrieve database connection from pool.");
+                return Outcome::Error((Status::InternalServerError, ()));
+            }
+        };
+
+        match RoleRepository::find_by_user(&mut db, &user).await {
+            Ok(roles) => {
+                let has_permission = roles
+                    .iter()
+                    .any(|r| matches!(r.code, RoleCode::Admin | RoleCode::Editor));
+
+                if has_permission {
+                    Outcome::Success(EditorUser(user))
+                } else {
+                    // User is authenticated but doesn't have the required role.
+                    Outcome::Error((Status::Forbidden, ()))
+                }
+            }
+            Err(e) => {
+                rocket::error!(
+                    "Role repository lookup failed for user {}: {:?}",
+                    user.id,
+                    e
+                );
+                Outcome::Error((Status::InternalServerError, ()))
+            }
+        }
     }
 }

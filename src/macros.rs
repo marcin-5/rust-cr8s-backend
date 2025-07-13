@@ -65,7 +65,7 @@ macro_rules! crud_handlers {
         pub async fn $create_fn(
             mut db: Db,
             data: Json<$new_model>,
-            _user: crate::models::User,
+            _user: crate::rocket_routes::EditorUser,
         ) -> HandlerResult<Custom<Value>> {
             <$repo>::create(&mut db, data.into_inner())
                 .await
@@ -83,7 +83,7 @@ macro_rules! crud_handlers {
             mut db: Db,
             id: i32,
             data: Json<$update_model>,
-            _user: crate::models::User,
+            _user: crate::rocket_routes::EditorUser,
         ) -> HandlerResult<Value> {
             <$repo>::update(&mut db, id, data.into_inner())
                 .await
@@ -97,7 +97,7 @@ macro_rules! crud_handlers {
                 }))
         }
         #[rocket::delete("/<id>")]
-        pub async fn $delete_fn(mut db: Db, id: i32, _user: crate::models::User) -> HandlerResult<NoContent> {
+        pub async fn $delete_fn(mut db: Db, id: i32, _user: crate::rocket_routes::EditorUser) -> HandlerResult<NoContent> {
             <$repo>::delete(&mut db, id)
                 .await
                 .map(|_| NoContent)
