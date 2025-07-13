@@ -10,7 +10,7 @@ fn test_login() {
     let client = Client::new();
 
     // Test for successful login
-    let token = common::get_admin_token(&client);
+    let token = common::get_user_token(&client, common::TEST_ADMIN_USERNAME);
     assert_eq!(token.len(), 128);
 
     // Test for failed login
