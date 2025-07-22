@@ -23,17 +23,34 @@ fn test_create_rustacean() {
     let name = "John Smith";
     let email = "john@smith.com";
 
-    let rustacean = create_test_rustacean_with_data(&client, name, email);
+    let response = create_test_rustacean_with_data(&client, name, email);
+    assert_eq!(response.status(), reqwest::StatusCode::CREATED);
+
+    let rustacean_value: rocket::serde::json::Value = response.json().unwrap();
+    let _rustacean_guard = common::RustaceanGuard {
+        client: &client,
+        value: rustacean_value.clone(),
+    };
 
     assert_eq!(
-        *rustacean,
+        rustacean_value,
         json!({
-            "id": rustacean["id"],
+            "id": rustacean_value["id"],
             "name": name,
             "email": email,
-            "created_at": rustacean["created_at"],
+            "created_at": rustacean_value["created_at"],
         })
     );
+}
+
+#[test]
+fn test_create_rustacean_unprivileged() {
+    let client = common::get_client_with_logged_in_viewer();
+    let name = "John Smith";
+    let email = "john@smith.com";
+
+    let response = create_test_rustacean_with_data(&client, name, email);
+    assert_eq!(response.status(), reqwest::StatusCode::FORBIDDEN);
 }
 
 #[test]

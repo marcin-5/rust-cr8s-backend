@@ -66,24 +66,24 @@ impl<'a> Drop for CrateGuard<'a> {
 // --- Helper Functions ---
 
 /// Creates a rustacean with specific data.
-pub fn create_test_rustacean_with_data<'a>(
-    client: &'a Client,
+pub fn create_test_rustacean_with_data(
+    client: &Client,
     name: &str,
     email: &str,
-) -> RustaceanGuard<'a> {
-    let response = client
+) -> reqwest::blocking::Response {
+    client
         .post(RUSTACEANS_URL)
         .json(&json!({ "name": name, "email": email }))
         .send()
-        .unwrap();
-    assert_eq!(response.status(), StatusCode::CREATED);
-    let value = response.json().unwrap();
-    RustaceanGuard { client, value }
+        .unwrap()
 }
 
 /// Creates a rustacean with default data.
-pub fn create_test_rustacean(client: &Client) -> RustaceanGuard {
-    create_test_rustacean_with_data(client, "John Doe", "john@doe.com")
+pub fn create_test_rustacean(client: &Client) -> RustaceanGuard<'_> {
+    let response = create_test_rustacean_with_data(client, "John Doe", "john@doe.com");
+    assert_eq!(response.status(), StatusCode::CREATED);
+    let value = response.json().unwrap();
+    RustaceanGuard { client, value }
 }
 
 /// Creates a crate with specific data.
