@@ -79,12 +79,12 @@ pub async fn digest_send(email: String, hours_since: i32) {
         let smtp_password =
             std::env::var("SMTP_PASSWORD").expect("Cannot load SMTP password from environment");
 
-        let mailer = HtmlMailer {
-            template_engine: tera,
-            smtp_host,
-            smtp_username,
-            smtp_password,
-        };
+        let mailer = HtmlMailer::builder()
+            .template_engine(tera)
+            .smtp_host(smtp_host)
+            .smtp_username(smtp_username)
+            .smtp_password(smtp_password)
+            .build();
         mailer.send(email, "email/digest.html", context).unwrap();
     }
 }
