@@ -1,6 +1,7 @@
 use crate::models::*;
 #[allow(unused_imports)]
 use crate::schema::*;
+use diesel::dsl::{now, IntervalDsl};
 use diesel::prelude::*;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
@@ -129,6 +130,18 @@ implement_repository!(
 
 // Use the macro to generate the implementation for CrateRepository.
 implement_repository!(CrateRepository, crates::table, Crate, NewCrate, UpdateCrate);
+
+impl CrateRepository {
+    pub async fn find_since(
+        c: &mut AsyncPgConnection,
+        hours_since: i32,
+    ) -> QueryResult<Vec<Crate>> {
+        crates::table
+            .filter(crates::created_at.ge(now - hours_since.hours()))
+            .load(c)
+            .await
+    }
+}
 
 implement_repository!(UserRepository, users::table, User, NewUser, { find });
 

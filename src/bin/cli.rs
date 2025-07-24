@@ -14,6 +14,16 @@ fn build_cli() -> Command {
         .about("Cr8s commands")
         .arg_required_else_help(true)
         .subcommand(build_users_command())
+        .subcommand(
+            Command::new("digest-send")
+                .about("Send a digest with latest crates via email")
+                .arg(Arg::new("email").required(true))
+                .arg(
+                    Arg::new("hours_since")
+                        .required(true)
+                        .value_parser(value_parser!(i32)),
+                ),
+        )
 }
 
 fn build_users_command() -> Command {
@@ -57,6 +67,16 @@ fn build_delete_user_command() -> Command {
 async fn handle_commands(matches: clap::ArgMatches) {
     match matches.subcommand() {
         Some(("users", sub_matches)) => handle_users_commands(sub_matches).await,
+        Some(("digest-send", sub_matches)) => {
+            backend::commands::digest_send(
+                sub_matches.get_one::<String>("email").unwrap().to_owned(),
+                sub_matches
+                    .get_one::<i32>("hours_since")
+                    .unwrap()
+                    .to_owned(),
+            )
+            .await
+        }
         _ => unreachable!(),
     }
 }
